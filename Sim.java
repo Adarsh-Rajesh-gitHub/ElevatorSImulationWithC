@@ -30,8 +30,10 @@ public class Sim {
     //time from button press to dropoff
     int totTime = 0;
     public static void main(String[] args) {
-        Sim s = new Sim();
-        s.sim();
+        for(int i = 0; i < 1; i++) {
+            Sim s = new Sim();
+            s.sim();
+        }
     }
 
     public void sim() {
@@ -45,7 +47,7 @@ public class Sim {
         ArrayList<Person> above = new ArrayList<>();
 
         //start simulation
-        for(int t = 0; t < 3600; t++) {
+        for(int t = 0; t < 500; t++) {
             //generate number people going up and down
             int u = (int) ((4+1) * Math.random());
             int d = (int) ((4+1) * Math.random());
@@ -81,7 +83,7 @@ public class Sim {
                         totDropped++;
                         totWaitTime+=e.onElev.get(i).tBoarded - e.onElev.get(i).tPressed;
                         totTime+= t-e.onElev.get(i).tPressed;
-                        e.onElev.remove(e.onElev.get(i));
+                        e.onElev.remove(i);
                         i--;
                     }
                 }
@@ -113,7 +115,7 @@ public class Sim {
                                 Person p = above.get(i);
                                 p.tBoarded = t;
                                 e.onElev.add(p);
-                                above.remove(above.get(i));
+                                above.remove(i);
                                 i--;
                             }
                         }
@@ -123,16 +125,21 @@ public class Sim {
             //move all elevators not on ground floor if they didn't have an e.open
             for(Elevator e: elevators) {
                 if(e.open == 0) {
-                    if(e.dest == -1 && e.curFloor != 0) e.curFloor-=1;
-                    else if(e.dest != -1) e.curFloor++;
-                    e.distMoved++;
+                    if(e.dest == -1 && e.curFloor != 0) {
+                        e.curFloor-=1; 
+                        e.distMoved++;
+                    }
+                    else if(e.dest != -1) {
+                        e.curFloor++;
+                        e.distMoved++;
+                    }
                 }
             }
-            for (Elevator e : elevators) {
-                if (e.dest != -1 && e.curFloor == e.dest) {
-                    e.dest = -1;
-                }
-            }
+            // for (Elevator e : elevators) {
+            //     if (e.dest != -1 && e.curFloor == e.dest) {
+            //         e.dest = -1;
+            //     }
+            // }
 
 
             //all elevators on ground floor pick one dest or if not available it defaults to highest in the people they got from the ground
@@ -164,15 +171,15 @@ public class Sim {
                     e.open--;
                 }
             }
-            // int c = 1;
-            // for(Elevator e: elevators) {
-            //     System.out.printf(
-            //     "t=%d | elevator=%d floor=%d dest=%d open=%d load=%d reserved=%d%n",
-            //     t, c, e.curFloor, e.dest, e.open, e.onElev.size(),
-            //     e.reserved.floorOn
-            //     );
-            //     c+=1;
-            // }
+            int c = 1;
+            for(Elevator e: elevators) {
+                System.out.printf(
+                "t=%d | elevator=%d floor=%d dest=%d open=%d load=%d reserved=%d%n",
+                t, c, e.curFloor, e.dest, e.open, e.onElev.size(),
+                e.reserved.floorOn
+                );
+                c+=1;
+            }
 
         }
         int avgElevatorDist = 0;
@@ -181,10 +188,12 @@ public class Sim {
             avgElevatorDist+=e.distMoved;
             num++;
         }
-        avgElevatorDist = avgElevatorDist/num;
-        System.out.println("Average Distance Elevator Travels: " + avgElevatorDist);
-        System.out.println("Average Wait Time for Elevator to Pick Up: " + totWaitTime/totDropped);
-        System.out.println("Average Time Spent From Button Press to Drop Off: " + totTime/totDropped);
-        System.out.println("Served " + totDropped + " customers");
+        if(totDropped > 0) {
+            avgElevatorDist = avgElevatorDist/num;
+            System.out.println("Average Distance Elevator Travels: " + avgElevatorDist);
+            System.out.println("Average Wait Time for Elevator to Pick Up: " + totWaitTime/totDropped);
+            System.out.println("Average Time Spent From Button Press to Drop Off: " + totTime/totDropped);
+            System.out.println("Served " + totDropped + " customers");
+        }
     }
 }

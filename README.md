@@ -1,0 +1,1 @@
+All non-ground requests are to go to ground; all ground requests are to go to a random non-ground floor. Inter-floor travel is not modeled.
