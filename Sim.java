@@ -4,28 +4,37 @@ class Elevator {
     int dest = -1;
     int curFloor = 0;
     ArrayList<Person> onElev = new ArrayList<>();
-    Person reserved = new Person(-1,-1);
+    Person reserved = new Person(-1,-1, 0);
     int open = 0;
     public Elevator() {}
+    int distMoved = 0;
 }
 
 class Person {
     int floorOn;
     int floorOff;
-    int timeWaited = 0;
-    int timeWaitedElev = 0;
-    public Person(int on, int off) {
+    int tPressed;
+    int tBoarded;
+    public Person(int on, int off, int t) {
         floorOn = on;
         floorOff = off;
+        tPressed = t;
     }
 }
 
 public class Sim {  
+
+    int totDropped = 0;
+    //time from button press to pickup
+    int totWaitTime = 0;
+    //time from button press to dropoff
+    int totTime = 0;
     public static void main(String[] args) {
-        simulate();
+        Sim s = new Sim();
+        s.sim();
     }
 
-    public static void simulate() {
+    public void sim() {
         //create elevators
         ArrayList<Elevator> elevators = new ArrayList<>();
         for(int i = 0; i < 8; i++) elevators.add(new Elevator());
@@ -36,17 +45,17 @@ public class Sim {
         ArrayList<Person> above = new ArrayList<>();
 
         //start simulation
-        for(int t = 0; t < 50; t++) {
+        for(int t = 0; t < 3600; t++) {
             //generate number people going up and down
             int u = (int) ((4+1) * Math.random());
             int d = (int) ((4+1) * Math.random());
             for(int i = 0; i < u; i++) {
                 int floorEnd = 1 + (int) ((149)* Math.random());
-                ground.add(new Person(0, floorEnd));
+                ground.add(new Person(0, floorEnd, t));
             }
             for(int i = 0; i < d; i++) {
                 int floorStart = 1 + (int) ((149)*Math.random());
-                above.add(new Person(floorStart, 0));
+                above.add(new Person(floorStart, 0, t));
             }
 
             //general structure we will operate on all elevators andd weed out the ones through
@@ -60,14 +69,18 @@ public class Sim {
                 if(e.dest == e.curFloor) {
                     e.dest = -1; 
                     if(e.reserved.floorOn != -1) {
+                        e.reserved.tBoarded = t;
                         e.onElev.add(e.reserved);
                         e.open = 10;
-                        e.reserved = new Person(-1,-1);
+                        e.reserved = new Person(-1,-1, 0);
                     }
                 }
                 for(int i = 0; i < e.onElev.size(); i++) {
                     if(e.curFloor == e.onElev.get(i).floorOff) {
                         if( e.open == 0) e.open = 10;
+                        totDropped++;
+                        totWaitTime+=e.onElev.get(i).tBoarded - e.onElev.get(i).tPressed;
+                        totTime+= t-e.onElev.get(i).tPressed;
                         e.onElev.remove(e.onElev.get(i));
                         i--;
                     }
@@ -81,7 +94,9 @@ public class Sim {
                 for(Elevator e : elevators) {
                     if( ground.size() > 0 && e.curFloor == 0 && e.onElev.size() < 20 && (e.open > 0 || e.onElev.size() == 0 && e.open == 0)) {
                         if(e.open == 0) e.open = 10;
-                        e.onElev.add(ground.poll());
+                        Person p = ground.poll();
+                        p.tBoarded = t;
+                        e.onElev.add(p);
                     }
                     else cnt+=1;                
                 }
@@ -95,7 +110,9 @@ public class Sim {
                         for(int i = 0; i < above.size(); i++) {
                             if(above.get(i).floorOn == e.curFloor && e.onElev.size() < 20) {
                                 if(e.open == 0) e.open = 10;
-                                e.onElev.add(above.get(i));
+                                Person p = above.get(i);
+                                p.tBoarded = t;
+                                e.onElev.add(p);
                                 above.remove(above.get(i));
                                 i--;
                             }
@@ -108,6 +125,7 @@ public class Sim {
                 if(e.open == 0) {
                     if(e.dest == -1 && e.curFloor != 0) e.curFloor-=1;
                     else if(e.dest != -1) e.curFloor++;
+                    e.distMoved++;
                 }
             }
             for (Elevator e : elevators) {
@@ -127,7 +145,7 @@ public class Sim {
                         Person aboveMax = (Collections.max(above, (p1, p2) -> Integer.compare(p1.floorOn, p2.floorOn)));
                         if(maxPerson.floorOff > aboveMax.floorOn) {
                             e.dest = maxPerson.floorOff;
-                            e.reserved = new Person(-1,-1);
+                            e.reserved = new Person(-1,-1, 0);
                         }
                         else {
                             e.dest = aboveMax.floorOn;
@@ -157,7 +175,16 @@ public class Sim {
             // }
 
         }
-
-
+        int avgElevatorDist = 0;
+        int num = 0;
+        for(Elevator e : elevators) {
+            avgElevatorDist+=e.distMoved;
+            num++;
+        }
+        avgElevatorDist = avgElevatorDist/num;
+        System.out.println("Average Distance Elevator Travels: " + avgElevatorDist);
+        System.out.println("Average Wait Time for Elevator to Pick Up: " + totWaitTime/totDropped);
+        System.out.println("Average Time Spent From Button Press to Drop Off: " + totTime/totDropped);
+        System.out.println("Served " + totDropped + " customers");
     }
 }
